@@ -83,6 +83,7 @@ export class HostRoom {
   private state: RoomState;
   private sid = rid();
   private lastSeen = new Map<string, number>();
+  private lastChat = new Map<string, number>();
   private timers: ReturnType<typeof setInterval>[] = [];
   private infoKey = "";
   private T: ReturnType<typeof topics>;
@@ -158,6 +159,11 @@ export class HostRoom {
   }
 
   dispatch(a: RoomAction, from = this.code) {
+    if (a?.type === "chat") {
+      const now = Date.now();
+      if (now - (this.lastChat.get(from) ?? 0) < 700) return;
+      this.lastChat.set(from, now);
+    }
     let next: RoomState;
     try {
       next = this.reducer(this.state, a, from);

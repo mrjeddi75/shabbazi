@@ -6,6 +6,14 @@ export interface Member {
   online: boolean;
 }
 
+export interface ChatMessage {
+  id: string;
+  uid: string;
+  name: string;
+  text: string;
+  at: number;
+}
+
 export interface RoomState {
   code: string; // = host uid
   members: Member[];
@@ -14,6 +22,7 @@ export interface RoomState {
   opts: Record<string, number>;
   v: number;
   kicked?: string[];
+  chat?: ChatMessage[];
 }
 
 /** Public info about a room, published by the host for the room list. */
@@ -28,6 +37,7 @@ export interface RoomInfo {
 }
 
 export type RoomAction =
+  | { type: "chat"; id: string; text: string }
   | { type: "select"; game: string | null }
   | { type: "opts"; opts: Record<string, number> }
   | { type: "start" }

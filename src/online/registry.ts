@@ -16,6 +16,14 @@ export function gameOpts(def: OnlineGame, opts: Record<string, number>) {
 export function roomReducer(s: RoomState, a: RoomAction, uid: string): RoomState {
   const isHost = uid === s.code;
   switch (a.type) {
+    case "chat": {
+      const member = s.members.find((m) => m.uid === uid && m.online);
+      if (!member || typeof a.text !== "string" || typeof a.id !== "string") return s;
+      const text = a.text.trim();
+      if (!text || text.length > 280 || !/^[a-zA-Z0-9-]{8,64}$/.test(a.id)) return s;
+      if (s.chat?.some((m) => m.id === a.id)) return s;
+      return { ...s, chat: [...(s.chat ?? []).slice(-49), { id: a.id, uid, name: member.name, text, at: Date.now() }] };
+    }
     case "select":
       if (!isHost) return s;
       return { ...s, game: a.game && ONLINE_BY_ID[a.game] ? a.game : null, g: null };

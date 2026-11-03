@@ -152,20 +152,20 @@ interface ShellProps {
 }
 export function GameShell({ title, emoji, accent, onBack, children, right }: ShellProps) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-4 pb-10 pt-4">
-      <header className="mb-4 flex items-center gap-3">
+    <div className="mx-auto flex min-h-screen w-full max-w-xl flex-col px-3 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-4 sm:pt-4">
+      <header className="mb-4 flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           onClick={onBack}
           aria-label="بازگشت"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-xl hover:bg-white/20 active:scale-95"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl hover:bg-white/20 active:scale-95"
         >
           →
         </button>
-        <div className={cn("flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl shadow-lg", accent)}>
+        <div className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl shadow-lg", accent)}>
           {emoji}
         </div>
-        <h1 className="flex-1 text-xl font-black">{title}</h1>
-        {right}
+        <h1 className="min-w-0 flex-1 truncate text-lg font-black sm:text-xl">{title}</h1>
+        {right && <div className="shrink-0">{right}</div>}
       </header>
       <main className="flex flex-1 flex-col gap-4 animate-fade-up">{children}</main>
     </div>

@@ -8,6 +8,7 @@ import { getUid, joinLink, normalizeCode, resetUid } from "./identity";
 import { gameOpts, ONLINE_BY_ID, ONLINE_GAMES, roomReducer } from "./registry";
 import { BROKERS } from "./relay";
 import { clearSavedRoom, useRoom, useRoomList, type RoomStatus } from "./room";
+import RoomChat from "./RoomChat";
 import type { RoomInfo } from "./types";
 
 const ACCENT = "from-violet-500 to-fuchsia-600";
@@ -95,8 +96,8 @@ export default function OnlineHub({ onBack, joinCode }: { onBack: () => void; jo
   return (
     <GameShell title="بازی آنلاین" emoji="🌐" accent={ACCENT} onBack={onBack} right={<RelayBadge relays={relays} />}>
       <Card className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
+        <div className="flex flex-wrap items-end gap-3 min-[390px]:flex-nowrap">
+          <div className="min-w-[150px] flex-1">
             <div className="mb-1 text-xs text-slate-400">😎 اسم تو</div>
             <input
               value={name}
@@ -108,7 +109,7 @@ export default function OnlineHub({ onBack, joinCode }: { onBack: () => void; jo
               )}
             />
           </div>
-          <div className="text-center">
+          <div className="shrink-0 text-center">
             <div className="mb-1 text-xs text-slate-400">شناسه‌ی تو</div>
             <button
               onClick={async () => {
@@ -223,14 +224,14 @@ function RoomRow({ r, onJoin }: { r: RoomInfo; onJoin: () => void }) {
   const def = r.game ? ONLINE_BY_ID[r.game] : null;
   const full = def ? r.count >= def.max && r.playing : false;
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 animate-fade-up">
-      <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl", def?.accent ?? "from-slate-600 to-slate-700")}>
+    <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-2.5 sm:gap-3 sm:p-3 animate-fade-up">
+      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br text-xl sm:h-12 sm:w-12 sm:rounded-2xl sm:text-2xl", def?.accent ?? "from-slate-600 to-slate-700")}>
         {def?.emoji ?? "🎲"}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <span className="truncate font-black">اتاق {r.host || "بی‌نام"}</span>
-          <span dir="ltr" className="font-mono text-[10px] text-slate-500">{r.code}</span>
+          <span className="min-w-0 truncate font-black">اتاق {r.host || "بی‌نام"}</span>
+          <span dir="ltr" className="hidden font-mono text-[10px] text-slate-500 min-[390px]:inline">{r.code}</span>
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-300">
           <span className="inline-flex items-center gap-1">
@@ -241,7 +242,7 @@ function RoomRow({ r, onJoin }: { r: RoomInfo; onJoin: () => void }) {
           <span className={r.playing ? "text-amber-300" : "text-emerald-300"}>{r.playing ? "▶ در حال بازی" : "⏳ در لابی"}</span>
         </div>
       </div>
-      <Button size="sm" variant={r.playing ? "secondary" : "success"} onClick={onJoin} className="shrink-0">
+      <Button size="sm" variant={r.playing ? "secondary" : "success"} onClick={onJoin} className="min-h-11 shrink-0">
         {r.playing ? (full ? "👀 تماشا" : "ورود") : "عضویت"}
       </Button>
     </div>
@@ -372,7 +373,7 @@ function RoomScreen({
             <>
               <Card className="text-center">
                 <div className="text-sm text-slate-400">کد اتاق</div>
-                <div dir="ltr" className="font-mono text-4xl font-black tracking-[0.3em]">{state.code}</div>
+                <div dir="ltr" className="font-mono text-3xl font-black tracking-[0.2em] sm:text-4xl sm:tracking-[0.3em]">{state.code}</div>
                 <div className="mt-3 flex flex-wrap justify-center gap-2">
                   <Button size="sm" variant="secondary" onClick={share}>{copied ? "✅ لینک کپی شد" : "📤 اشتراک لینک دعوت"}</Button>
                   <Button
@@ -404,7 +405,7 @@ function RoomScreen({
                       <span className="font-bold">{m.name}</span>
                       {m.uid === state.code && <span title="میزبان">👑</span>}
                       {m.uid === uid && <span className="text-xs text-violet-300">(تو)</span>}
-                      <span dir="ltr" className="ms-auto font-mono text-xs text-slate-500">{m.uid}</span>
+                      <span dir="ltr" className="ms-auto hidden font-mono text-xs text-slate-500 min-[400px]:inline">{m.uid}</span>
                       {isHost && m.uid !== uid && (
                         <button
                           onClick={() => confirm(`${m.name} از اتاق خارج بشه؟`) && send({ type: "kick", uid: m.uid })}
@@ -421,7 +422,7 @@ function RoomScreen({
 
               <Card>
                 <SectionTitle>{isHost ? "🎮 انتخاب بازی" : "🎮 بازی انتخاب‌شده"}</SectionTitle>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2 min-[380px]:grid-cols-2">
                   {ONLINE_GAMES.map((g) => {
                     const active = state.game === g.id;
                     const enough = online.length >= g.min;
@@ -486,6 +487,8 @@ function RoomScreen({
               )}
             </>
           )}
+          <div aria-hidden="true" className="h-16 shrink-0" />
+          <RoomChat messages={state.chat ?? []} uid={uid} connected={status === "ready"} send={send} />
         </>
       )}
     </GameShell>

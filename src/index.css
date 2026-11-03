@@ -34,6 +34,11 @@
 html {
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+@media (max-width: 640px) {
+  input, textarea, select { font-size: 16px; }
 }
 
 body {
