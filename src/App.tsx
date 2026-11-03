@@ -6,7 +6,8 @@ import EsmFamil from "@/games/EsmFamil";
 import Mafia from "@/games/Mafia";
 import Spyfall from "@/games/Spyfall";
 import TruthOrDare from "@/games/TruthOrDare";
-import WouldYouRather from "@/games/WouldYouRather";
+import Dooz12 from "@/games/Dooz12";
+import Mench from "@/games/Mench";
 import { usePlayers } from "@/lib/hooks";
 import { primeAudio, toFa } from "@/lib/utils";
 import { cn } from "@/utils/cn";
@@ -29,7 +30,8 @@ const GAMES: GameMeta[] = [
   { id: "charades", name: "پانتومیم", emoji: "🎭", desc: "تیمی! فیلم، ضرب‌المثل، حیوان… بدون حرف زدن اجرا کن.", players: "۴+", time: "۱۵ دقیقه", accent: "from-amber-400 to-orange-600", component: Charades },
   { id: "esmfamil", name: "اسم فامیل", emoji: "✍️", desc: "گردونه‌ی حروف، تایمر و جدول امتیاز؛ فقط کاغذ و خودکار بیارید.", players: "۲ تا ۱۰", time: "۲۰ دقیقه", accent: "from-sky-400 to-indigo-600", component: EsmFamil, tag: "نوستالژی" },
   { id: "tod", name: "جرأت یا حقیقت", emoji: "🍾", desc: "بطری بچرخون! کارت‌های حقیقت و جرأت بامزه.", players: "۲ تا ۱۲", time: "آزاد", accent: "from-fuchsia-500 to-purple-700", component: TruthOrDare },
-  { id: "wyr", name: "کدوم رو ترجیح می‌دی؟", emoji: "⚖️", desc: "دو گزینه‌ی سخت، رأی بدید و نتیجه رو ببینید.", players: "۲+", time: "آزاد", accent: "from-cyan-400 to-blue-600", component: WouldYouRather },
+  { id: "dooz", name: "دوز ۱۲ تایی", emoji: "⭕", desc: "بازی فکری دو نفره؛ دوز بساز و مهره‌های حریف رو حذف کن!", players: "۲", time: "۱۵ دقیقه", accent: "from-lime-400 to-emerald-600", component: Dooz12, tag: "جدید" },
+  { id: "mench", name: "منچ", emoji: "🎲", desc: "منچ ۴ نفره با تاس، زدن مهره و ربات برای جاهای خالی.", players: "۲ تا ۴", time: "۲۰ دقیقه", accent: "from-yellow-400 to-red-500", component: Mench, tag: "جدید" },
   { id: "bomb", name: "بمب کلمات", emoji: "💣", desc: "یه کلمه بگو و گوشی رو رد کن، قبل از اینکه بترکه!", players: "۲ تا ۱۰", time: "۱۰ دقیقه", accent: "from-orange-500 to-red-600", component: Bomb, tag: "هیجانی" },
 ];
 
