@@ -7,7 +7,7 @@ import { cn } from "@/utils/cn";
 const ACCENT = "from-yellow-400 to-red-500";
 
 /* ------------------------------ board data ------------------------------ */
-const COLORS = [
+export const COLORS = [
   { name: "قرمز", hex: "#ef4444", light: "#fecaca" },
   { name: "سبز", hex: "#22c55e", light: "#bbf7d0" },
   { name: "زرد", hex: "#eab308", light: "#fef08a" },
@@ -46,9 +46,9 @@ const BASE_RECT: [number, number][] = [[0, 0], [9, 0], [9, 9], [0, 9]];
 const DIRS: [number, number][] = [[-1, 0], [0, -1], [1, 0], [0, 1]];
 const STARS = START.map((s) => s + 8);
 const SAFE = new Set([...START, ...STARS]);
-const FINISH = 56;
+export const FINISH = 56;
 
-function piecePos(c: number, p: number, k: number): [number, number] {
+export function piecePos(c: number, p: number, k: number): [number, number] {
   if (p < 0) return BASE[c][k];
   if (p <= 50) {
     const [x, y] = TRACK[(START[c] + p) % 52];
@@ -66,7 +66,7 @@ function piecePos(c: number, p: number, k: number): [number, number] {
 /* ------------------------------ game logic ------------------------------ */
 type Mode = "human" | "bot" | "off";
 
-interface MG {
+export interface MG {
   seats: number[];
   pieces: number[][];
   turn: number; // index in seats
@@ -77,7 +77,7 @@ interface MG {
   log: string;
 }
 
-function legalMoves(g: MG): number[] {
+export function legalMoves(g: MG): number[] {
   const c = g.seats[g.turn];
   const v = g.dice;
   if (!v) return [];
@@ -94,7 +94,7 @@ function legalMoves(g: MG): number[] {
   return res;
 }
 
-function nextTurn(g: MG): MG {
+export function nextTurn(g: MG): MG {
   let i = g.turn;
   for (let n = 0; n < g.seats.length; n++) {
     i = (i + 1) % g.seats.length;
@@ -103,7 +103,7 @@ function nextTurn(g: MG): MG {
   return { ...g, turn: i, phase: "roll", sixes: 0 };
 }
 
-function applyRoll(g: MG, v: number, nm: (c: number) => string): MG {
+export function applyRoll(g: MG, v: number, nm: (c: number) => string): MG {
   const sixes = v === 6 ? g.sixes + 1 : 0;
   if (sixes >= 3) return nextTurn({ ...g, dice: v, log: `${nm(g.seats[g.turn])} سه شش پشت سر هم آورد، نوبتش می‌پره!` });
   return { ...g, dice: v, sixes, phase: "move", log: "" };
@@ -122,7 +122,7 @@ function captureAt(g: MG, c: number, np: number): { o: number; j: number }[] {
   return hits;
 }
 
-function applyMove(g: MG, k: number, nm: (c: number) => string): MG {
+export function applyMove(g: MG, k: number, nm: (c: number) => string): MG {
   const c = g.seats[g.turn];
   const v = g.dice!;
   const pieces = g.pieces.map((a) => [...a]);
@@ -178,7 +178,7 @@ function bestMove(g: MG): number {
 
 /* ------------------------------ dice ------------------------------ */
 const DOTS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-function Die({ value, rolling }: { value: number | null; rolling: boolean }) {
+export function Die({ value, rolling }: { value: number | null; rolling: boolean }) {
   const v = value ?? 1;
   return (
     <div className={cn("grid h-20 w-20 shrink-0 grid-cols-3 grid-rows-3 rounded-2xl bg-white p-2 shadow-xl", rolling && "animate-shake", value === null && !rolling && "opacity-50")}>
@@ -186,6 +186,95 @@ function Die({ value, rolling }: { value: number | null; rolling: boolean }) {
         <span key={i} className={cn("m-auto h-3.5 w-3.5 rounded-full", DOTS[v].includes(i) ? "bg-slate-900" : "bg-transparent")} />
       ))}
     </div>
+  );
+}
+
+export function menchLegalSet(g: MG, curColor: number): Set<number> {
+  const legalSet = new Set<number>();
+  if (g.phase !== "move") return legalSet;
+  legalMoves(g).forEach((m) => {
+    if (g.pieces[curColor][m] === -1) g.pieces[curColor].forEach((p, k) => p === -1 && legalSet.add(k));
+    else legalSet.add(m);
+  });
+  return legalSet;
+}
+
+export function MenchBoard({ g, curColor, legalSet, onPiece }: { g: MG; curColor: number; legalSet: Set<number>; onPiece: (c: number, k: number) => void }) {
+  const items: { c: number; k: number; x: number; y: number; p: number }[] = [];
+  {
+    const order = [...g.seats.filter((s) => s !== curColor), ...(g.seats.includes(curColor) ? [curColor] : [])];
+    for (const c of order) for (let k = 0; k < 4; k++) {
+      const p = g.pieces[c][k];
+      const [x, y] = piecePos(c, p, k);
+      items.push({ c, k, x, y, p });
+    }
+  }
+  const groups = new Map<string, number>();
+  items.forEach((it) => {
+    const key = `${it.x.toFixed(2)},${it.y.toFixed(2)}`;
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  });
+  const seen = new Map<string, number>();
+  const OFFS: [number, number][] = [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]];
+  return (
+      <svg viewBox="0 0 15 15" className="mx-auto w-full max-w-xl touch-manipulation select-none">
+        <rect x="0" y="0" width="15" height="15" rx="0.5" fill="#0f172a" />
+        {/* bases */}
+        {BASE_RECT.map(([bx, by], c) => (
+          <g key={c} opacity={g.seats.includes(c) ? 1 : 0.35}>
+            <rect x={bx + 0.1} y={by + 0.1} width="5.8" height="5.8" rx="0.7" fill={COLORS[c].hex} />
+            <rect x={bx + 0.9} y={by + 0.9} width="4.2" height="4.2" rx="0.7" fill="#0f172a" opacity="0.35" />
+            {BASE[c].map(([x, y], k) => (
+              <circle key={k} cx={x} cy={y} r="0.5" fill={COLORS[c].light} opacity="0.55" />
+            ))}
+          </g>
+        ))}
+        {/* track */}
+        {TRACK.map(([x, y], i) => {
+          const sc = START.indexOf(i);
+          return (
+            <g key={i}>
+              <rect x={x + 0.04} y={y + 0.04} width="0.92" height="0.92" rx="0.12" fill={sc >= 0 ? COLORS[sc].hex : "#e2e8f0"} />
+              {STARS.includes(i) && (
+                <text x={x + 0.5} y={y + 0.52} textAnchor="middle" dominantBaseline="central" fontSize="0.7" fill="#64748b">★</text>
+              )}
+              {sc >= 0 && (
+                <text x={x + 0.5} y={y + 0.52} textAnchor="middle" dominantBaseline="central" fontSize="0.55" fill="#fff">▶</text>
+              )}
+            </g>
+          );
+        })}
+        {/* home columns */}
+        {HOME.map((cells, c) =>
+          cells.map(([x, y], i) => (
+            <rect key={`${c}-${i}`} x={x + 0.04} y={y + 0.04} width="0.92" height="0.92" rx="0.12" fill={COLORS[c].hex} opacity="0.85" />
+          )),
+        )}
+        {/* center */}
+        <polygon points="6,6 6,9 7.5,7.5" fill={COLORS[0].hex} />
+        <polygon points="6,6 9,6 7.5,7.5" fill={COLORS[1].hex} />
+        <polygon points="9,6 9,9 7.5,7.5" fill={COLORS[2].hex} />
+        <polygon points="6,9 9,9 7.5,7.5" fill={COLORS[3].hex} />
+
+        {/* pieces */}
+        {items.map((it) => {
+          const key = `${it.x.toFixed(2)},${it.y.toFixed(2)}`;
+          const total = groups.get(key) ?? 1;
+          const n = seen.get(key) ?? 0;
+          seen.set(key, n + 1);
+          const [ox, oy] = total > 1 ? OFFS[n % 4] : [0, 0];
+          const r = it.p === FINISH ? 0.16 : total > 1 ? 0.27 : 0.38;
+          const legal = it.c === curColor && legalSet.has(it.k);
+          return (
+            <g key={`${it.c}-${it.k}`} onClick={() => onPiece(it.c, it.k)} className={legal ? "cursor-pointer" : ""}>
+              {legal && <circle cx={it.x + ox} cy={it.y + oy} r={r + 0.22} fill="none" stroke="#fff" strokeWidth="0.09" className="animate-pulse" />}
+              <circle cx={it.x + ox} cy={it.y + oy} r={r} fill={COLORS[it.c].hex} stroke="#fff" strokeWidth="0.08" />
+              <circle cx={it.x + ox - r * 0.3} cy={it.y + oy - r * 0.3} r={r * 0.3} fill="#fff" opacity="0.45" />
+              {legal && <circle cx={it.x + ox} cy={it.y + oy} r={r + 0.3} fill="transparent" />}
+            </g>
+          );
+        })}
+      </svg>
   );
 }
 
@@ -272,23 +361,6 @@ export default function Mench({ onBack }: { onBack: () => void }) {
     play(kk);
   };
 
-  /* ---------- board pieces ---------- */
-  const items: { c: number; k: number; x: number; y: number; p: number }[] = [];
-  if (g) {
-    const order = [...g.seats.filter((s) => s !== curColor), ...(g.seats.includes(curColor) ? [curColor] : [])];
-    for (const c of order) for (let k = 0; k < 4; k++) {
-      const p = g.pieces[c][k];
-      const [x, y] = piecePos(c, p, k);
-      items.push({ c, k, x, y, p });
-    }
-  }
-  const groups = new Map<string, number>();
-  items.forEach((it) => {
-    const key = `${it.x.toFixed(2)},${it.y.toFixed(2)}`;
-    groups.set(key, (groups.get(key) ?? 0) + 1);
-  });
-  const seen = new Map<string, number>();
-  const OFFS: [number, number][] = [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]];
 
   const legalSet = new Set<number>();
   if (g && g.phase === "move" && !isBot) {
@@ -361,64 +433,7 @@ export default function Mench({ onBack }: { onBack: () => void }) {
           {g.log && <div className="rounded-2xl bg-white/5 px-4 py-2 text-center text-sm">{g.log}</div>}
 
           <Card className="p-2 sm:p-3">
-            <svg viewBox="0 0 15 15" className="mx-auto w-full max-w-xl touch-manipulation select-none">
-              <rect x="0" y="0" width="15" height="15" rx="0.5" fill="#0f172a" />
-              {/* bases */}
-              {BASE_RECT.map(([bx, by], c) => (
-                <g key={c} opacity={g.seats.includes(c) ? 1 : 0.35}>
-                  <rect x={bx + 0.1} y={by + 0.1} width="5.8" height="5.8" rx="0.7" fill={COLORS[c].hex} />
-                  <rect x={bx + 0.9} y={by + 0.9} width="4.2" height="4.2" rx="0.7" fill="#0f172a" opacity="0.35" />
-                  {BASE[c].map(([x, y], k) => (
-                    <circle key={k} cx={x} cy={y} r="0.5" fill={COLORS[c].light} opacity="0.55" />
-                  ))}
-                </g>
-              ))}
-              {/* track */}
-              {TRACK.map(([x, y], i) => {
-                const sc = START.indexOf(i);
-                return (
-                  <g key={i}>
-                    <rect x={x + 0.04} y={y + 0.04} width="0.92" height="0.92" rx="0.12" fill={sc >= 0 ? COLORS[sc].hex : "#e2e8f0"} />
-                    {STARS.includes(i) && (
-                      <text x={x + 0.5} y={y + 0.52} textAnchor="middle" dominantBaseline="central" fontSize="0.7" fill="#64748b">★</text>
-                    )}
-                    {sc >= 0 && (
-                      <text x={x + 0.5} y={y + 0.52} textAnchor="middle" dominantBaseline="central" fontSize="0.55" fill="#fff">▶</text>
-                    )}
-                  </g>
-                );
-              })}
-              {/* home columns */}
-              {HOME.map((cells, c) =>
-                cells.map(([x, y], i) => (
-                  <rect key={`${c}-${i}`} x={x + 0.04} y={y + 0.04} width="0.92" height="0.92" rx="0.12" fill={COLORS[c].hex} opacity="0.85" />
-                )),
-              )}
-              {/* center */}
-              <polygon points="6,6 6,9 7.5,7.5" fill={COLORS[0].hex} />
-              <polygon points="6,6 9,6 7.5,7.5" fill={COLORS[1].hex} />
-              <polygon points="9,6 9,9 7.5,7.5" fill={COLORS[2].hex} />
-              <polygon points="6,9 9,9 7.5,7.5" fill={COLORS[3].hex} />
-
-              {/* pieces */}
-              {items.map((it) => {
-                const key = `${it.x.toFixed(2)},${it.y.toFixed(2)}`;
-                const total = groups.get(key) ?? 1;
-                const n = seen.get(key) ?? 0;
-                seen.set(key, n + 1);
-                const [ox, oy] = total > 1 ? OFFS[n % 4] : [0, 0];
-                const r = it.p === FINISH ? 0.16 : total > 1 ? 0.27 : 0.38;
-                const legal = it.c === curColor && legalSet.has(it.k);
-                return (
-                  <g key={`${it.c}-${it.k}`} onClick={() => onPiece(it.c, it.k)} className={legal ? "cursor-pointer" : ""}>
-                    {legal && <circle cx={it.x + ox} cy={it.y + oy} r={r + 0.22} fill="none" stroke="#fff" strokeWidth="0.09" className="animate-pulse" />}
-                    <circle cx={it.x + ox} cy={it.y + oy} r={r} fill={COLORS[it.c].hex} stroke="#fff" strokeWidth="0.08" />
-                    <circle cx={it.x + ox - r * 0.3} cy={it.y + oy - r * 0.3} r={r * 0.3} fill="#fff" opacity="0.45" />
-                    {legal && <circle cx={it.x + ox} cy={it.y + oy} r={r + 0.3} fill="transparent" />}
-                  </g>
-                );
-              })}
-            </svg>
+            <MenchBoard g={g} curColor={curColor} legalSet={legalSet} onPiece={onPiece} />
           </Card>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

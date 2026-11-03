@@ -9,6 +9,7 @@ import TruthOrDare from "@/games/TruthOrDare";
 import Dooz12 from "@/games/Dooz12";
 import Mench from "@/games/Mench";
 import { usePlayers } from "@/lib/hooks";
+import OnlineHub from "@/online/OnlineHub";
 import { primeAudio, toFa } from "@/lib/utils";
 import { cn } from "@/utils/cn";
 
@@ -60,7 +61,13 @@ export default function App() {
     return () => window.removeEventListener("pointerdown", unlock);
   }, []);
 
-  const game = GAMES.find((g) => g.id === route);
+  const [path, query = ""] = route.split("?");
+  if (path === "online") {
+    const join = new URLSearchParams(query).get("join") ?? undefined;
+    return <OnlineHub joinCode={join} onBack={() => navigate("")} />;
+  }
+
+  const game = GAMES.find((g) => g.id === path);
   if (game) {
     const G = game.component;
     return <G key={game.id} onBack={() => navigate("")} />;
@@ -83,6 +90,21 @@ function Home({ onOpen }: { onOpen: (id: string) => void }) {
           مجموعه بازی‌های گروهی دورهمی با یک گوشی. بدون سرور، بدون نصب، بدون اینترنت — فقط باز کن و بازی کن!
         </p>
       </header>
+
+      <button
+        onClick={() => onOpen("online")}
+        className="group relative mb-4 flex w-full items-center gap-4 overflow-hidden rounded-3xl border border-violet-400/30 bg-gradient-to-l from-violet-600/30 via-fuchsia-600/20 to-transparent p-5 text-start transition hover:-translate-y-0.5 hover:border-violet-300/60 active:scale-[0.98] animate-fade-up"
+      >
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-3xl shadow-lg">🌐</div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-black">بازی آنلاین</h2>
+            <span className="rounded-full bg-fuchsia-500/30 px-2 py-0.5 text-[10px] font-bold text-fuchsia-100">جدید</span>
+          </div>
+          <p className="mt-1 text-sm leading-6 text-slate-300">هر کس با گوشی خودش! شناسه بگیر، اتاق بساز و دوستات رو دعوت کن: دوز، منچ، جاسوس و مافیا.</p>
+        </div>
+        <span className="text-2xl text-slate-400 transition group-hover:-translate-x-1">←</span>
+      </button>
 
       <Card className="mb-6 animate-fade-up">
         <button onClick={() => setShowPlayers((s) => !s)} className="flex w-full items-center justify-between text-start">

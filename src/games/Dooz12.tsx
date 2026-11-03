@@ -5,10 +5,10 @@ import { beep, toFa, vibrate } from "@/lib/utils";
 import { cn } from "@/utils/cn";
 
 const ACCENT = "from-lime-400 to-emerald-600";
-const PCOL = ["#f43f5e", "#38bdf8"];
+export const PCOL = ["#f43f5e", "#38bdf8"];
 
-type P = 0 | 1;
-type Cell = P | null;
+export type P = 0 | 1;
+export type Cell = P | null;
 
 /* ------------------------------ board geometry ------------------------------ */
 const COORDS: [number, number][] = [];
@@ -48,7 +48,7 @@ for (const l of LINES) {
 const LINES_OF: number[][][] = COORDS.map((_, i) => LINES.filter((l) => l.includes(i)));
 
 /* ------------------------------ game logic ------------------------------ */
-interface S {
+export interface S {
   board: Cell[];
   hand: [number, number];
   turn: P;
@@ -58,7 +58,7 @@ interface S {
   msg: string;
 }
 
-const initial = (turn: P = 0): S => ({
+export const initial = (turn: P = 0): S => ({
   board: Array<Cell>(24).fill(null),
   hand: [12, 12],
   turn,
@@ -68,16 +68,16 @@ const initial = (turn: P = 0): S => ({
   msg: "",
 });
 
-const count = (board: Cell[], p: P) => board.filter((c) => c === p).length;
+export const count = (board: Cell[], p: P) => board.filter((c) => c === p).length;
 const inMill = (board: Cell[], i: number, p: P) => LINES_OF[i].some((l) => l.every((j) => board[j] === p));
 
-function removable(board: Cell[], o: P): number[] {
+export function removable(board: Cell[], o: P): number[] {
   const all = board.map((c, i) => (c === o ? i : -1)).filter((i) => i >= 0);
   const free = all.filter((i) => !inMill(board, i, o));
   return free.length ? free : all;
 }
 
-function moveTargets(board: Cell[], hand: [number, number], p: P, i: number, flying: boolean): number[] {
+export function moveTargets(board: Cell[], hand: [number, number], p: P, i: number, flying: boolean): number[] {
   if (board[i] !== p) return [];
   if (flying && hand[p] === 0 && count(board, p) === 3) return board.map((c, j) => (c === null ? j : -1)).filter((j) => j >= 0);
   return ADJ[i].filter((j) => board[j] === null);
@@ -97,7 +97,7 @@ function finish(s: S, flying: boolean, names: [string, string]): S {
   return { ...s, turn: o, selected: null, msg: "" };
 }
 
-function click(s: S, i: number, flying: boolean, names: [string, string]): S {
+export function click(s: S, i: number, flying: boolean, names: [string, string]): S {
   if (s.winner !== null) return s;
   const p = s.turn;
   const o = (1 - p) as P;
@@ -138,6 +138,57 @@ function click(s: S, i: number, flying: boolean, names: [string, string]): S {
 const SCALE = 50;
 const OFF = 25;
 const px = (v: number) => v * SCALE + OFF;
+
+export function doozHighlights(s: S, flying: boolean) {
+  const p = s.turn;
+  let targets = new Set<number>();
+  if (s.winner === null && !s.removing) {
+    if (s.hand[p] > 0) targets = new Set(s.board.map((c, i) => (c === null ? i : -1)).filter((i) => i >= 0));
+    else if (s.selected !== null) targets = new Set(moveTargets(s.board, s.hand, p, s.selected, flying));
+  }
+  const removableSet = s.removing ? new Set(removable(s.board, (1 - p) as P)) : new Set<number>();
+  return { targets, removableSet };
+}
+
+export function DoozBoard({ s, targets, removableSet, onPoint }: { s: S; targets: Set<number>; removableSet: Set<number>; onPoint: (i: number) => void }) {
+  return (
+    <svg viewBox="0 0 350 350" className="mx-auto w-full max-w-md touch-manipulation select-none">
+      <rect x="2" y="2" width="346" height="346" rx="28" fill="#1e293b" stroke="rgba(255,255,255,0.12)" strokeWidth="2" />
+      {LINES.map((l, k) => (
+        <path
+          key={k}
+          d={`M${px(COORDS[l[0]][0])} ${px(COORDS[l[0]][1])} L${px(COORDS[l[1]][0])} ${px(COORDS[l[1]][1])} L${px(COORDS[l[2]][0])} ${px(COORDS[l[2]][1])}`}
+          stroke="rgba(226,232,240,0.4)"
+          strokeWidth="3"
+          fill="none"
+          strokeLinejoin="round"
+        />
+      ))}
+      {COORDS.map(([x, y], i) => {
+        const c = s.board[i];
+        const cx = px(x);
+        const cy = px(y);
+        const isTarget = targets.has(i);
+        const isRem = removableSet.has(i);
+        const isSel = s.selected === i;
+        return (
+          <g key={i} onClick={() => onPoint(i)} className="cursor-pointer">
+            <circle cx={cx} cy={cy} r={24} fill="transparent" />
+            {c === null ? (
+              <circle cx={cx} cy={cy} r={isTarget ? 8 : 5} fill={isTarget ? "#34d399" : "rgba(226,232,240,0.6)"} className={isTarget ? "animate-pulse" : ""} />
+            ) : (
+              <>
+                <circle cx={cx} cy={cy} r={18} fill={PCOL[c]} stroke={isSel ? "#fff" : "rgba(0,0,0,0.4)"} strokeWidth={isSel ? 4 : 2} />
+                <circle cx={cx - 5} cy={cy - 6} r={5} fill="rgba(255,255,255,0.35)" />
+                {isRem && <circle cx={cx} cy={cy} r={24} fill="none" stroke="#fde047" strokeWidth="3" strokeDasharray="5 4" className="animate-pulse" />}
+              </>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 export default function Dooz12({ onBack }: { onBack: () => void }) {
   const [saved] = usePlayers();
@@ -184,14 +235,7 @@ export default function Dooz12({ onBack }: { onBack: () => void }) {
   const p = s.turn;
   const placing = s.hand[p] > 0;
 
-  const targets = useMemo(() => {
-    if (s.winner !== null || s.removing) return new Set<number>();
-    if (placing) return new Set(s.board.map((c, i) => (c === null ? i : -1)).filter((i) => i >= 0));
-    if (s.selected !== null) return new Set(moveTargets(s.board, s.hand, p, s.selected, flying));
-    return new Set<number>();
-  }, [s, placing, p, flying]);
-
-  const removableSet = useMemo(() => (s.removing ? new Set(removable(s.board, (1 - p) as P)) : new Set<number>()), [s, p]);
+  const { targets, removableSet } = useMemo(() => doozHighlights(s, flying), [s, flying]);
 
   const status = s.winner !== null
     ? ""
@@ -272,47 +316,7 @@ export default function Dooz12({ onBack }: { onBack: () => void }) {
           )}
 
           <Card className="p-2 sm:p-4">
-            <svg viewBox="0 0 350 350" className="mx-auto w-full max-w-md touch-manipulation select-none">
-              <rect x="2" y="2" width="346" height="346" rx="28" fill="#1e293b" stroke="rgba(255,255,255,0.12)" strokeWidth="2" />
-              {LINES.map((l, k) => (
-                <path
-                  key={k}
-                  d={`M${px(COORDS[l[0]][0])} ${px(COORDS[l[0]][1])} L${px(COORDS[l[1]][0])} ${px(COORDS[l[1]][1])} L${px(COORDS[l[2]][0])} ${px(COORDS[l[2]][1])}`}
-                  stroke="rgba(226,232,240,0.4)"
-                  strokeWidth="3"
-                  fill="none"
-                  strokeLinejoin="round"
-                />
-              ))}
-              {COORDS.map(([x, y], i) => {
-                const c = s.board[i];
-                const cx = px(x);
-                const cy = px(y);
-                const isTarget = targets.has(i);
-                const isRem = removableSet.has(i);
-                const isSel = s.selected === i;
-                return (
-                  <g key={i} onClick={() => onPoint(i)} className="cursor-pointer">
-                    <circle cx={cx} cy={cy} r={24} fill="transparent" />
-                    {c === null ? (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={isTarget ? 8 : 5}
-                        fill={isTarget ? "#34d399" : "rgba(226,232,240,0.6)"}
-                        className={isTarget ? "animate-pulse" : ""}
-                      />
-                    ) : (
-                      <>
-                        <circle cx={cx} cy={cy} r={18} fill={PCOL[c]} stroke={isSel ? "#fff" : "rgba(0,0,0,0.4)"} strokeWidth={isSel ? 4 : 2} />
-                        <circle cx={cx - 5} cy={cy - 6} r={5} fill="rgba(255,255,255,0.35)" />
-                        {isRem && <circle cx={cx} cy={cy} r={24} fill="none" stroke="#fde047" strokeWidth="3" strokeDasharray="5 4" className="animate-pulse" />}
-                      </>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
+            <DoozBoard s={s} targets={targets} removableSet={removableSet} onPoint={onPoint} />
           </Card>
 
           <div className="grid grid-cols-2 gap-2">
