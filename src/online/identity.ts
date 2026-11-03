@@ -1,5 +1,4 @@
 const ALPH = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // بدون 0/O و 1/I برای خوانایی
-export const PEER_PREFIX = "shabbazi-v1-";
 
 export function randomCode(len = 6): string {
   const arr = new Uint32Array(len);

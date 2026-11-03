@@ -36,7 +36,7 @@ export function roomReducer(s: RoomState, a: RoomAction, uid: string): RoomState
       return { ...s, g: null };
     case "kick":
       if (!isHost || a.uid === s.code) return s;
-      return { ...s, members: s.members.filter((m) => m.uid !== a.uid) };
+      return { ...s, members: s.members.filter((m) => m.uid !== a.uid), kicked: [...(s.kicked ?? []).slice(-20), a.uid] };
     case "g": {
       if (!s.g || !s.game) return s;
       const def = ONLINE_BY_ID[s.game];

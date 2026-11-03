@@ -13,6 +13,18 @@ export interface RoomState {
   g: unknown | null;
   opts: Record<string, number>;
   v: number;
+  kicked?: string[];
+}
+
+/** Public info about a room, published by the host for the room list. */
+export interface RoomInfo {
+  code: string;
+  host: string;
+  game: string | null;
+  playing: boolean;
+  count: number;
+  pub: boolean;
+  at: number;
 }
 
 export type RoomAction =
