@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# build output (GitHub Actions builds it on the server)
+dist/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# local env
+.env
+.env.*
